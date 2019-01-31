@@ -100,6 +100,7 @@ def delete_product(id):
 
 
 ###### Buyer Table ########
+# Buyer Model/Class
 class Buyer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fname = db.Column(db.String(100), nullable=False)
@@ -127,6 +128,7 @@ buyers_schema = BuyerSchema(many=True, strict=True)
 
 
 ###### Seller Table ########
+# Seller Model/Class
 class Seller(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fname = db.Column(db.String(100), nullable=False)
@@ -178,6 +180,7 @@ def get_sellers():
 ###### Seller Table ########
 
 ###### Transaction Table ########
+# Transaction Model/Class
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date_created = db.Column(db.DateTime, nullable=False)
@@ -203,7 +206,7 @@ class TransactionSchema(ma.Schema):
 # Init schema
 transaction_schema = TransactionSchema(strict=True)
 transaction_schema = TransactionSchema(many=True, strict=True)
-###### Seller Table ########
+###### Transaction Table ########
 
 
 #Run Server
