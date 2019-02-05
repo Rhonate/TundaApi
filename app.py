@@ -155,6 +155,24 @@ def get_sellers():
     result = sellers_schema.dump(all_sellers)
     return jsonify(result.data)
 
+# Update a Seller
+@app.route('/seller/<id>', methods=['PUT'])
+def update_seller(id):
+    seller = Seller.query.get(id)
+
+    phone = request.json['phone']
+    address = request.json['address']
+    seller_password = request.json['seller_password']
+    
+
+    seller.phone = phone
+    seller.address = address
+    seller.seller_password = seller_password
+
+    db.session.commit()
+
+    return seller_schema.jsonify(seller)
+
 ###### Seller Table ########
 
 ###### Buyer Table ########
@@ -168,7 +186,7 @@ class Buyer(db.Model):
     buyer_email = db.Column(db.String(100), nullable=False)
     buyer_password = db.Column(db.String(100), nullable=False)
 
-    def __init__(self, name, price, qty, seller_id):
+    def __init__(self, fname, lname, phone, address, buyer_email, buyer_password):
         self.fname = fname
         self.lname = lname
         self.phone = phone
@@ -184,6 +202,48 @@ class BuyerSchema(ma.Schema):
 # Init schema
 buyer_schema = BuyerSchema(strict=True)
 buyers_schema = BuyerSchema(many=True, strict=True)
+
+# Add a Buyer
+@app.route('/buyer', methods=['POST'])
+def add_buyer():
+    fname = request.json['fname']
+    lname = request.json['lname']
+    phone = request.json['phone']
+    address = request.json['address']
+    buyer_email = request.json['buyer_email']
+    buyer_password = request.json['buyer_password']
+
+    new_buyer = Buyer(fname, lname, phone, address, buyer_email, buyer_password)
+
+    db.session.add(new_buyer)
+    db.session.commit()
+
+    return buyer_schema.jsonify(new_buyer)
+
+# Get all buyers
+@app.route('/buyer', methods=['GET'])
+def get_buyers():
+    all_buyers = Buyer.query.all()
+    result = buyers_schema.dump(all_buyers)
+    return jsonify(result.data)
+
+# Update a Buyer
+@app.route('/buyer/<id>', methods=['PUT'])
+def update_buyer(id):
+    buyer = Buyer.query.get(id)
+
+    phone = request.json['phone']
+    address = request.json['address']
+    buyer_password = request.json['buyer_password']
+    
+
+    buyer.phone = phone
+    buyer.address = address
+    buyer.buyer_password = buyer_password
+
+    db.session.commit()
+
+    return seller_schema.jsonify(buyer)
 ###### Buyer Table ########
 
 
