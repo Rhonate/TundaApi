@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+
 import os
 
 #Init app
@@ -48,8 +49,9 @@ def add_products():
     name = request.json['name']
     price = request.json['price']
     qty = request.json['qty']
+    seller_id = request.json['seller_id']
 
-    new_product = Product(name, price, qty)
+    new_product = Product(name, price, qty, seller_id)
 
     db.session.add(new_product)
     db.session.commit()
@@ -99,34 +101,6 @@ def delete_product(id):
 ###### Product Table ########
 
 
-###### Buyer Table ########
-# Buyer Model/Class
-class Buyer(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    fname = db.Column(db.String(100), nullable=False)
-    lname =db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(15), nullable=False)
-    buyer_email = db.Column(db.String(100), nullable=False)
-    buyer_password = db.Column(db.String(100), nullable=False)
-
-    def __init__(self, name, price, qty, seller_id):
-        self.fname = fname
-        self.lname = lname
-        self.phone = phone
-        self.buyer_email = buyer_email
-        self.buyer_password = buyer_password
-
-# Buyer Schema
-class BuyerSchema(ma.Schema):
-    class Meta:
-        fields = ('id', 'fname', 'lname', 'phone', 'buyer_email', 'buyer_password')
-
-# Init schema
-buyer_schema = BuyerSchema(strict=True)
-buyers_schema = BuyerSchema(many=True, strict=True)
-###### Buyer Table ########
-
-
 ###### Seller Table ########
 # Seller Model/Class
 class Seller(db.Model):
@@ -134,22 +108,24 @@ class Seller(db.Model):
     fname = db.Column(db.String(100), nullable=False)
     lname =db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(15), nullable=False)
+    address = db.Column(db.String(30), nullable=False)
     seller_email = db.Column(db.String(100), nullable=False)
     seller_password = db.Column(db.String(100), nullable=False)
 
     product = db.relationship('Product', backref='seller', cascade = 'all, delete-orphan', lazy = 'dynamic')
 
-    def __init__(self, fname, lname, phone, seller_email, seller_password):
+    def __init__(self, fname, lname, phone, address, seller_email, seller_password):
         self.fname = fname
         self.lname = lname
         self.phone = phone
+        self.address = address
         self.seller_email = seller_email
         self.seller_password = seller_password
 
 # Seller Schema
 class SellerSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'fname', 'lname', 'phone', 'seller_email', 'seller_password')
+        fields = ('id', 'fname', 'lname', 'phone', 'address', 'seller_email', 'seller_password')
 
 # Init schema
 seller_schema = SellerSchema(strict=True)
@@ -161,10 +137,11 @@ def add_seller():
     fname = request.json['fname']
     lname = request.json['lname']
     phone = request.json['phone']
+    address = request.json['address']
     seller_email = request.json['seller_email']
     seller_password = request.json['seller_password']
 
-    new_seller = Seller(fname, lname, phone, seller_email, seller_password)
+    new_seller = Seller(fname, lname, phone, address, seller_email, seller_password)
 
     db.session.add(new_seller)
     db.session.commit()
@@ -177,7 +154,38 @@ def get_sellers():
     all_sellers = Seller.query.all()
     result = sellers_schema.dump(all_sellers)
     return jsonify(result.data)
+
 ###### Seller Table ########
+
+###### Buyer Table ########
+# Buyer Model/Class
+class Buyer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fname = db.Column(db.String(100), nullable=False)
+    lname =db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(15), nullable=False)    
+    address = db.Column(db.String(30), nullable=False)
+    buyer_email = db.Column(db.String(100), nullable=False)
+    buyer_password = db.Column(db.String(100), nullable=False)
+
+    def __init__(self, name, price, qty, seller_id):
+        self.fname = fname
+        self.lname = lname
+        self.phone = phone
+        self.address = address
+        self.buyer_email = buyer_email
+        self.buyer_password = buyer_password
+
+# Buyer Schema
+class BuyerSchema(ma.Schema):
+    class Meta:
+        fields = ('id', 'fname', 'lname', 'phone', 'address', 'buyer_email', 'buyer_password')
+
+# Init schema
+buyer_schema = BuyerSchema(strict=True)
+buyers_schema = BuyerSchema(many=True, strict=True)
+###### Buyer Table ########
+
 
 ###### Transaction Table ########
 # Transaction Model/Class
