@@ -1,7 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-
+import uuid
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+import datetime
+import jwt
 import os
 
 #Init app
@@ -20,24 +24,29 @@ ma = Marshmallow(app)
 # Product Class/Model
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
     qty = db.Column(db.Integer, nullable=False)
+    purchased = db.Column(db.Boolean)
 
-    seller_id = db.Column(db.Integer, db.ForeignKey('seller.id'),nullable=False)  
+    seller_id = db.Column(db.Integer, db.ForeignKey('seller.id'),nullable=False)
 
 
-    def __init__(self, name, price, qty, seller_id):
+
+    def __init__(self, name, price, qty, purchased, seller_id):
         self.name = name
         self.price = price
         self.qty = qty
+        self.purchased = purchased
         self.seller_id = seller_id
-        
+
+    def toString(self):
+        return ({'name':self.name, 'price':self.price, 'qty':self.qty, 'purchased':self.purchased, 'seller_id':self.seller_id})
 
 # Product Schema
 class ProductSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'name', 'price', 'qty', 'seller_id' )
+        fields = ('name', 'price', 'qty', 'purchased', 'seller_id' )
 
 # Init schema
 product_schema = ProductSchema(strict=True)
@@ -49,9 +58,10 @@ def add_products():
     name = request.json['name']
     price = request.json['price']
     qty = request.json['qty']
+    purchased = request.json['purchased']
     seller_id = request.json['seller_id']
 
-    new_product = Product(name, price, qty, seller_id)
+    new_product = Product(name, price, qty, purchased, seller_id)
 
     db.session.add(new_product)
     db.session.commit()
@@ -68,21 +78,22 @@ def get_products():
 # Get one products
 @app.route('/product/<id>', methods=['GET'])
 def get_product(id):
-    product = Product.query.get(id)
-    return product_schema.jsonify(product)
+    product = Product.query.filter_by(seller_id = id).all()
+    v = [products.toString() for products in product]
+    return jsonify(product = v)
 
 # Update a Product
 @app.route('/product/<id>', methods=['PUT'])
 def update_products(id):
     product = Product.query.get(id)
 
-    name = request.json['name']
     price = request.json['price']
     qty = request.json['qty']
+    purchased = request.json['purchased']
 
-    product.name = name
     product.price = price
     product.qty = qty
+    product.purchased = purchased
 
     db.session.commit()
 
@@ -125,7 +136,7 @@ class Seller(db.Model):
 # Seller Schema
 class SellerSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'fname', 'lname', 'phone', 'address', 'seller_email', 'seller_password')
+        fields = ('fname', 'lname', 'phone', 'address', 'seller_email', 'seller_password')
 
 # Init schema
 seller_schema = SellerSchema(strict=True)
@@ -140,6 +151,7 @@ def add_seller():
     address = request.json['address']
     seller_email = request.json['seller_email']
     seller_password = request.json['seller_password']
+    seller_password = generate_password_hash(seller_password, method='sha256')
 
     new_seller = Seller(fname, lname, phone, address, seller_email, seller_password)
 
@@ -173,6 +185,16 @@ def update_seller(id):
 
     return seller_schema.jsonify(seller)
 
+# Delete sellers
+@app.route('/seller/<id>', methods=['DELETE'])
+def delete_seller(id):
+    seller = Seller.query.get(id)
+    db.session.delete(seller)
+
+    db.session.commit()
+    
+    return seller_schema.jsonify(seller)
+
 ###### Seller Table ########
 
 ###### Buyer Table ########
@@ -197,7 +219,7 @@ class Buyer(db.Model):
 # Buyer Schema
 class BuyerSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'fname', 'lname', 'phone', 'address', 'buyer_email', 'buyer_password')
+        fields = ('fname', 'lname', 'phone', 'address', 'buyer_email', 'buyer_password')
 
 # Init schema
 buyer_schema = BuyerSchema(strict=True)
@@ -212,6 +234,7 @@ def add_buyer():
     address = request.json['address']
     buyer_email = request.json['buyer_email']
     buyer_password = request.json['buyer_password']
+    buyer_password = generate_password_hash(buyer_password, method='sha256')
 
     new_buyer = Buyer(fname, lname, phone, address, buyer_email, buyer_password)
 
@@ -244,6 +267,16 @@ def update_buyer(id):
     db.session.commit()
 
     return seller_schema.jsonify(buyer)
+
+# Delete buyers
+@app.route('/buyer/<id>', methods=['DELETE'])
+def delete_buyer(id):
+    product = Product.query.get(id)
+    db.session.delete(product)
+
+    db.session.commit()
+    
+    return product_schema.jsonify(product)
 ###### Buyer Table ########
 
 
