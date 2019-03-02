@@ -142,15 +142,40 @@ class SellerSchema(ma.Schema):
 seller_schema = SellerSchema(strict=True)
 sellers_schema = SellerSchema(many=True, strict=True)
 
+
+    # def post(self):
+    #     json_data = request.get_json(force=True)
+    #     if not json_data:
+    #            return {'message': 'No input data provided'}, 400
+    #     # Validate and deserialize input
+    #     data, errors = category_schema.load(json_data)
+    #     if errors:
+    #         return errors, 422
+    #     category = Category.query.filter_by(name=data['name']).first()
+    #     if category:
+    #         return {'message': 'Category already exists'}, 400
+    #     category = Category(
+    #         name=json_data['name']
+    #         )
+
+    #     db.session.add(category)
+    #     db.session.commit()
+
+    #     result = category_schema.dump(category).data
+
+    #     return { "status": 'success', 'data': result }, 201
+
 # Add a Seller
 @app.route('/seller', methods=['POST'])
 def add_seller():
-    fname = request.json['fname']
-    lname = request.json['lname']
-    phone = request.json['phone']
-    address = request.json['address']
-    seller_email = request.json['seller_email']
-    seller_password = request.json['seller_password']
+    data = request.get_json()
+
+    fname = data['fname']
+    lname = data['lname']
+    phone = data['phone']
+    address = data['address']
+    seller_email = data['seller_email']
+    seller_password = data['seller_password']
     seller_password = generate_password_hash(seller_password, method='sha256')
 
     new_seller = Seller(fname, lname, phone, address, seller_email, seller_password)
@@ -194,6 +219,27 @@ def delete_seller(id):
     db.session.commit()
     
     return seller_schema.jsonify(seller)
+
+# Login Seller
+@app.route('/seller/login')
+def sellerLogin():
+    auth = request.authorization
+
+    if not auth or not auth.username or not auth.password:
+        return jsonify('Could not verify', 401, {'WW-Authenticate' : 'Basic realm="Login required!"'})
+
+    seller = Seller.query.filter_by(seller_email=auth.username).first()
+
+    if not seller:
+        return jsonify({'message' : 'Invalid User'})
+
+    if check_password_hash(seller.seller_password, auth.password):
+        token = jwt.encode({'id' : seller.id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
+
+        return jsonify({'token' : token.decode('UTF-8')})
+
+    return jsonify({'message' : 'Invalid Password'})
+
 
 ###### Seller Table ########
 
@@ -312,4 +358,5 @@ transaction_schema = TransactionSchema(many=True, strict=True)
 
 #Run Server
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
+    # app.run(debug=True)
